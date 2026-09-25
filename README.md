@@ -4,7 +4,7 @@ A small admin dashboard built with Next.js, React, Tailwind CSS and Axios, using
 free [DummyJSON](https://dummyjson.com) API. Built as a frontend assignment.
 
 ## Live demo
-[link here after deploying]
+https://product-dashboard-fawn-seven.vercel.app
 
 ## Tech stack
 - Next.js 16 (App Router)
@@ -48,5 +48,50 @@ set directly in `src/lib/axios.js`.
 - [x] All list state (page, limit, search, category, sort) lives in the URL
 - [x] Invalid URL values (`?page=abc`, `?page=999`) are handled without breaking the page
 - [x] Double-click / rapid-click protection on Login, Save and Delete-confirm
+- [x] Restyled UI (cream/ivory theme, serif headings) — visual polish only, no change
+  to data, fields, or behavior described above
 
 ## Project structure
+
+src/
+app/
+layout.js Root layout (fonts, global styles)
+globals.css Tailwind import + design tokens
+page.js Redirects "/" to "/products"
+login/
+page.js Login page
+(dashboard)/
+layout.js Shared header + logout, wraps all product pages
+products/
+page.js Product list: search, filters, sort, pagination, delete
+new/
+page.js Add product form
+[id]/
+page.js Product details
+not-found.js "Product not found" page
+edit/
+page.js Edit product form
+components/ Small, reusable UI pieces (list, form, pagination,
+search box, filters, dialogs, states, etc.)
+hooks/ useDebounce, useListParams, useCategories
+lib/
+axios.js Shared Axios instance + request/response interceptors
+token.js Cookie-based token storage
+params.js URL param parsing/validation + page clamping
+overlay.js sessionStorage overlay for add/edit/delete (see NOTES.md)
+services/
+auth.service.js Login API call
+product.service.js All product-related API calls
+proxy.js Route guard — redirects unauthenticated users to /login
+(named middleware.js on Next <16)
+
+
+
+## Notes on two specific decisions
+
+See `NOTES.md` for the reasoning behind:
+- what happens when search and category filter would otherwise be used together
+- how add/edit/delete "work" against an API that doesn't actually persist changes
+- a couple of real bugs hit during development and how they were fixed
+
+
