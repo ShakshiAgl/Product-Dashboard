@@ -1,31 +1,34 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useDebounce } from "@/hooks/useDebounce";
 
 export default function SearchBox({ initialValue, onDebouncedChange, delayMs = 400 }) {
   const [text, setText] = useState(initialValue);
   const debounced = useDebounce(text, delayMs);
+  const lastReported = useRef(initialValue); // what we last told the parent
 
-  // Fire the callback only when the debounced value actually settles.
   useEffect(() => {
+    if (debounced === lastReported.current) return; // no real change — safe against double-invoke
+    lastReported.current = debounced;
     onDebouncedChange(debounced);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debounced]);
 
-  // Keep the input in sync if the URL changes from elsewhere
-  // (e.g. clearing the category also clears q, or browser back/forward).
   useEffect(() => {
     setText(initialValue);
+    lastReported.current = initialValue;
   }, [initialValue]);
 
   return (
-    <input
-      type="text"
-      value={text}
-      onChange={(e) => setText(e.target.value)}
-      placeholder="Search products…"
-      className="w-full max-w-xs rounded border px-3 py-2 text-sm"
-    />
+    <div className="relative w-full max-w-xs">
+      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#8B8171]">⌕</span>
+      <input
+        type="text"
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        placeholder="Search products…"
+        className="w-full rounded-lg border border-[#E7E1D3] bg-white py-2 pl-8 pr-3 text-sm outline-none focus:border-[#9C6B30]"
+      />
+    </div>
   );
 }
