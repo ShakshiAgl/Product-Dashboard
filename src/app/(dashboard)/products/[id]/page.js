@@ -31,19 +31,14 @@ export default function ProductDetailsPage() {
       }
 
       try {
-        // Locally-added products don't exist on the real API.
         const local = overlayStore.getAdded(Number(id));
         let data = local;
         if (!data) {
           const fetched = await getProductById(id);
-          data = overlayStore.applyToOne(fetched); // merge edits, or null if deleted
+          data = overlayStore.applyToOne(fetched);
         }
-
-        if (!data) {
-          setNotFoundFlag(true);
-        } else {
-          setProduct(data);
-        }
+        if (!data) setNotFoundFlag(true);
+        else setProduct(data);
       } catch {
         setNotFoundFlag(true);
       } finally {
@@ -60,27 +55,44 @@ export default function ProductDetailsPage() {
 
   return (
     <div className="space-y-6">
-      <Link href="/products" className="text-sm text-gray-500 hover:underline">
+      <Link href="/products" className="text-sm text-[#8B8171] hover:text-[#9C6B30]">
         ← Back to products
       </Link>
 
       <div className="grid gap-6 md:grid-cols-2">
         <ImageGallery images={product.images} title={product.title} />
 
-        <div className="space-y-3">
-          <h1 className="text-2xl font-semibold">{product.title}</h1>
-          <p className="capitalize text-gray-500">{product.category}</p>
-          <div className="flex items-center gap-3">
-            <span className="text-xl font-bold">${product.price}</span>
-            <Rating value={product.rating} />
+        <div className="space-y-4">
+          <div>
+            <p className="text-xs uppercase tracking-[0.2em] text-[#9C6B30] capitalize">{product.category}</p>
+            <h1 className="font-display text-3xl text-[#211D17]">{product.title}</h1>
           </div>
-          <p className="text-sm text-gray-500">Stock: {product.stock}</p>
-          <p className="text-gray-700">{product.description}</p>
+
+          <div className="rounded-xl border border-[#E7E1D3] bg-white p-4">
+            <p className="text-xs uppercase tracking-wide text-[#8B8171]">Price</p>
+            <div className="mt-1 flex items-center gap-3">
+              <span className="font-display text-2xl text-[#211D17]">${product.price}</span>
+              <Rating value={product.rating} />
+            </div>
+          </div>
+
+          <p className="text-[#5C5548]">{product.description}</p>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-xl border border-[#E7E1D3] bg-white p-3">
+              <p className="text-xs uppercase tracking-wide text-[#8B8171]">Stock</p>
+              <p className="mt-1 font-medium text-[#211D17]">{product.stock} units</p>
+            </div>
+            <div className="rounded-xl border border-[#E7E1D3] bg-white p-3">
+              <p className="text-xs uppercase tracking-wide text-[#8B8171]">Brand</p>
+              <p className="mt-1 font-medium text-[#211D17]">{product.brand || "—"}</p>
+            </div>
+          </div>
         </div>
       </div>
 
       <div>
-        <h2 className="mb-3 text-lg font-semibold">Reviews</h2>
+        <h2 className="font-display mb-3 text-lg text-[#211D17]">Reviews</h2>
         <ReviewList reviews={product.reviews} />
       </div>
     </div>

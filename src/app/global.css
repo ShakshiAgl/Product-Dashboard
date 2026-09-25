@@ -1,0 +1,32 @@
+@import "tailwindcss";
+
+:root {
+  --color-bg: #F7F4EE;
+  --color-border: #E7E1D3;
+  --color-text: #211D17;
+  --color-muted: #8B8171;
+  --color-accent: #9C6B30;
+}
+
+body {
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+}
+
+.font-display {
+  font-family: "Playfair Display", Georgia, serif;
+}
+
+.input {
+  width: 100%;
+  border-radius: 0.5rem;
+  border: 1px solid #E7E1D3;
+  background: #FAF8F3;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  outline: none;
+}
+.input:focus {
+  border-color: #9C6B30;
+}

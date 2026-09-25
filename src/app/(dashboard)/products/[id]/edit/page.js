@@ -20,7 +20,6 @@ export default function EditProductPage() {
       setLoading(true);
       setError(null);
       try {
-        // A locally-added product doesn't exist on the real API, so check the overlay first.
         const local = overlayStore.getAdded(Number(id));
         const data = local || overlayStore.applyToOne(await getProductById(id));
         if (!data) throw new Error("Product not found.");
@@ -36,8 +35,6 @@ export default function EditProductPage() {
 
   async function handleUpdate(values) {
     if (!overlayStore.getAdded(Number(id))) {
-      // Only call the real API for products that actually exist there;
-      // a locally-added product has nothing to PUT to.
       await updateProduct(id, values);
     }
     overlayStore.editProduct(Number(id), values);
@@ -48,8 +45,11 @@ export default function EditProductPage() {
   if (error) return <ErrorState message={error} onRetry={() => router.refresh()} />;
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-xl font-semibold">Edit Product</h1>
+    <div className="space-y-5">
+      <div>
+        <p className="text-xs uppercase tracking-[0.2em] text-[#9C6B30]">Catalog</p>
+        <h1 className="font-display text-2xl text-[#211D17]">Edit Product</h1>
+      </div>
       <ProductForm initialValues={product} onSubmit={handleUpdate} submitLabel="Save changes" />
     </div>
   );

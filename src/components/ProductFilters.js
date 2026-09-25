@@ -16,8 +16,6 @@ export default function ProductFilters({ category, categories, sortBy, order, on
     ...categories.map((c) => ({ value: c.slug, label: c.name })),
   ];
 
-  // Combine sortBy + order into one dropdown value like "price-asc",
-  // since two separate selects for one concept is more clicking for the user.
   const sortValue = sortBy ? `${sortBy}-${order}` : "";
 
   function handleSortChange(value) {
@@ -30,19 +28,9 @@ export default function ProductFilters({ category, categories, sortBy, order, on
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-4 rounded-lg border bg-white p-3">
-      <Select
-        label="Category"
-        value={category}
-        onChange={onCategoryChange}
-        options={categoryOptions}
-      />
-      <Select
-        label="Sort by"
-        value={sortValue}
-        onChange={handleSortChange}
-        options={SORT_OPTIONS}
-      />
+    <div className="flex flex-wrap items-center gap-4 rounded-xl border border-[#E7E1D3] bg-white px-4 py-3">
+      <Select label="Category" value={category} onChange={onCategoryChange} options={categoryOptions} />
+      <Select label="Sort by" value={sortValue} onChange={handleSortChange} options={SORT_OPTIONS} />
     </div>
   );
 }

@@ -4,93 +4,84 @@ import Rating from "./Rating";
 export default function ProductList({ products, onDelete }) {
   return (
     <>
-      {/* Table: hidden below md, shown at md and up */}
-      <table className="hidden w-full border-collapse text-left text-sm md:table">
-        <thead>
-          <tr className="border-b bg-gray-50">
-            <th className="p-3">Image</th>
-            <th className="p-3">Title</th>
-            <th className="p-3">Category</th>
-            <th className="p-3">Price</th>
-            <th className="p-3">Rating</th>
-            <th className="p-3">Stock</th>
-            <th className="p-3">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {products.map((p) => (
-            <tr key={p.id} className="border-b hover:bg-gray-50">
-              <td className="p-3">
-                <img
-                  src={p.thumbnail}
-                  alt={p.title}
-                  className="h-12 w-12 rounded object-cover"
-                />
-              </td>
-              <td className="p-3">
-                <Link href={`/products/${p.id}`} className="font-medium hover:underline">
-                  {p.title}
-                </Link>
-              </td>
-              <td className="p-3 capitalize text-gray-600">{p.category}</td>
-              <td className="p-3">${p.price}</td>
-              <td className="p-3">
-                <Rating value={p.rating} />
-              </td>
-              <td className="p-3">{p.stock}</td>
-              <td className="p-3">
-                <div className="flex gap-2">
-                  <Link
-                    href={`/products/${p.id}/edit`}
-                    className="text-sm text-blue-600 hover:underline"
-                  >
-                    Edit
-                  </Link>
-                  <button
-                    onClick={() => onDelete(p.id)}
-                    className="text-sm text-red-600 hover:underline"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </td>
+      <div className="hidden overflow-hidden rounded-xl border border-[#E7E1D3] bg-white md:block">
+        <table className="w-full border-collapse text-left text-sm">
+          <thead>
+            <tr className="border-b border-[#E7E1D3] bg-[#FAF8F3] text-xs uppercase tracking-wide text-[#8B8171]">
+              <th className="p-4">Product</th>
+              <th className="p-4">Category</th>
+              <th className="p-4">Price</th>
+              <th className="p-4">Rating</th>
+              <th className="p-4">Stock</th>
+              <th className="p-4">Actions</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {products.map((p) => (
+              <tr key={p.id} className="border-b border-[#F1ECE1] last:border-0 hover:bg-[#FAF8F3]">
+                <td className="p-4">
+                  <div className="flex items-center gap-3">
+                 <img
+                    src={p.thumbnail || "https://cdn.dummyjson.com/product-images/placeholder.jpg"}
+                    alt={p.title}
+                    className="h-12 w-12 rounded-lg border border-[#E7E1D3] object-cover"
+                    />
+                    <Link href={`/products/${p.id}`} className="font-medium text-[#211D17] hover:text-[#9C6B30]">
+                      {p.title}
+                    </Link>
+                  </div>
+                </td>
+                <td className="p-4">
+                  <span className="rounded-full bg-[#F3E7D3] px-2.5 py-1 text-xs capitalize text-[#7A5324]">
+                    {p.category}
+                  </span>
+                </td>
+                <td className="p-4 font-medium">${p.price}</td>
+                <td className="p-4"><Rating value={p.rating} /></td>
+                <td className="p-4 text-[#8B8171]">{p.stock}</td>
+                <td className="p-4">
+                  <div className="flex gap-3">
+                    <Link href={`/products/${p.id}/edit`} className="text-sm text-[#9C6B30] hover:underline">
+                      Edit
+                    </Link>
+                    <button onClick={() => onDelete(p.id)} className="text-sm text-red-600 hover:underline">
+                      Delete
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
-      {/* Cards: shown below md, hidden at md and up */}
       <div className="grid gap-3 md:hidden">
         {products.map((p) => (
-          <div key={p.id} className="rounded-lg border bg-white p-3 shadow-sm">
+          <div key={p.id} className="rounded-xl border border-[#E7E1D3] bg-white p-4">
             <Link href={`/products/${p.id}`} className="flex gap-3">
-              <img
-                src={p.thumbnail}
+           <img
+                src={p.thumbnail || "https://cdn.dummyjson.com/product-images/placeholder.jpg"}
                 alt={p.title}
-                className="h-16 w-16 rounded object-cover"
-              />
+                className="h-12 w-12 rounded-lg border border-[#E7E1D3] object-cover"
+                />
               <div className="flex flex-1 flex-col gap-1">
-                <span className="font-medium">{p.title}</span>
-                <span className="text-sm capitalize text-gray-500">{p.category}</span>
-                <div className="flex items-center justify-between">
+                <span className="font-medium text-[#211D17]">{p.title}</span>
+                <span className="w-fit rounded-full bg-[#F3E7D3] px-2 py-0.5 text-xs capitalize text-[#7A5324]">
+                  {p.category}
+                </span>
+                <div className="flex items-center justify-between pt-1">
                   <span className="font-semibold">${p.price}</span>
                   <Rating value={p.rating} />
                 </div>
-                <span className="text-xs text-gray-500">Stock: {p.stock}</span>
+                <span className="text-xs text-[#8B8171]">Stock: {p.stock}</span>
               </div>
             </Link>
 
-            <div className="mt-2 flex gap-3 border-t pt-2">
-              <Link
-                href={`/products/${p.id}/edit`}
-                className="text-sm text-blue-600 hover:underline"
-              >
+            <div className="mt-3 flex gap-4 border-t border-[#F1ECE1] pt-3">
+              <Link href={`/products/${p.id}/edit`} className="text-sm text-[#9C6B30] hover:underline">
                 Edit
               </Link>
-              <button
-                onClick={() => onDelete(p.id)}
-                className="text-sm text-red-600 hover:underline"
-              >
+              <button onClick={() => onDelete(p.id)} className="text-sm text-red-600 hover:underline">
                 Delete
               </button>
             </div>

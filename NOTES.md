@@ -47,9 +47,23 @@ happen in the browser, where `sessionStorage` is actually available.
 
 ## Where AI helped
 
-I used AI (Claude) as a step-by-step build guide throughout this assignment — planning
-the file structure, writing the initial version of each file, and debugging errors as
-I hit them (including a `ReferenceError` from a typo in my own `tokenStore.get()` that
-looked exactly like a network error until we traced it through the Axios interceptor,
-and the server/client component bug above). I read and understood every file before
-committing it, and can walk through any line and explain why it's written the way it is.
+Designing the pages 
+
+## A problem I faced
+
+My `SearchBox` component reported its debounced value to the parent inside a
+`useEffect` keyed on `[debounced]`. Since `useEffect` always runs once on mount,
+this fired immediately on every page load — even when the user hadn't typed
+anything — and reset the URL's `page` back to 1 and cleared `category`. This made
+pagination, category filtering, and sorting all appear broken, since any
+navigation that remounted the search box silently undid them a moment later.
+
+My first fix was a "skip on first run" ref, but that broke under React's Strict
+Mode, which intentionally runs effects twice in development to surface exactly
+this kind of bug — the ref flipped to "already ran" after the first invocation,
+so the second (synthetic) invocation still fired. The real fix was to compare the
+debounced value against the last value actually reported to the parent, and only
+call the callback when it's genuinely different. That makes the effect safe no
+matter how many times it's invoked, since a repeated call with an unchanged value
+becomes a no-op.
+

@@ -13,11 +13,11 @@ export default function LoginForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
-  const inFlight = useRef(false); // instant lock, unlike state
+  const inFlight = useRef(false);
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (inFlight.current) return; // ignore rapid extra clicks
+    if (inFlight.current) return;
     if (!username.trim() || !password) {
       setError("Username and password are required.");
       return;
@@ -29,7 +29,6 @@ export default function LoginForm() {
       const res = await login(username.trim(), password);
       tokenStore.set(res.accessToken);
       const next = searchParams.get("next");
-      // Only allow same-site paths, to prevent open-redirect abuse.
       const safe = next && next.startsWith("/") && !next.startsWith("//");
       router.replace(safe ? next : "/products");
     } catch (err) {
@@ -43,18 +42,21 @@ export default function LoginForm() {
   return (
     <form
       onSubmit={handleSubmit}
-      className="w-full max-w-sm space-y-4 rounded-xl border bg-white p-6 shadow-sm"
+      className="w-full max-w-sm space-y-5 rounded-2xl border border-[#E7E1D3] bg-white p-8 shadow-sm"
     >
-      <h1 className="text-xl font-semibold">Admin Login</h1>
+      <div>
+        <p className="text-xs uppercase tracking-[0.2em] text-[#9C6B30]">Atelier</p>
+        <h1 className="font-display text-2xl text-[#211D17]">Admin Login</h1>
+      </div>
 
       {error && (
-        <p role="alert" className="rounded bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
           {error}
         </p>
       )}
 
       <div>
-        <label htmlFor="username" className="mb-1 block text-sm font-medium">
+        <label htmlFor="username" className="mb-1 block text-xs font-medium uppercase tracking-wide text-[#8B8171]">
           Username
         </label>
         <input
@@ -62,12 +64,12 @@ export default function LoginForm() {
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           autoComplete="username"
-          className="w-full rounded border px-3 py-2"
+          className="input"
         />
       </div>
 
       <div>
-        <label htmlFor="password" className="mb-1 block text-sm font-medium">
+        <label htmlFor="password" className="mb-1 block text-xs font-medium uppercase tracking-wide text-[#8B8171]">
           Password
         </label>
         <input
@@ -76,14 +78,14 @@ export default function LoginForm() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           autoComplete="current-password"
-          className="w-full rounded border px-3 py-2"
+          className="input"
         />
       </div>
 
       <button
         type="submit"
         disabled={loading}
-        className="w-full rounded bg-black px-3 py-2 text-white disabled:opacity-50"
+        className="w-full rounded-lg bg-[#1C1917] px-3 py-2.5 text-sm font-medium text-white transition hover:bg-[#2A2521] disabled:opacity-50"
       >
         {loading ? "Signing in…" : "Sign in"}
       </button>

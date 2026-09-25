@@ -59,12 +59,7 @@ function ProductsPageInner() {
         let data;
 
         if (params.q) {
-          data = await searchProducts({
-            q: params.q,
-            limit: params.limit,
-            skip,
-            signal: controller.signal,
-          });
+          data = await searchProducts({ q: params.q, limit: params.limit, skip, signal: controller.signal });
         } else if (params.category) {
           data = await getProductsByCategory({
             category: params.category,
@@ -87,16 +82,11 @@ function ProductsPageInner() {
             ? sortProducts(data.products, params.sortBy, params.order)
             : data.products;
 
-        // Apply locally-added/edited/deleted products on top of the real API response.
-        const withOverlay = overlayStore.applyToList(sorted);
-
-        setProducts(withOverlay);
+        setProducts(overlayStore.applyToList(sorted));
         setTotal(data.total);
 
         const safePage = clampPage(params.page, data.total, params.limit);
-        if (safePage !== params.page) {
-          update({ page: safePage });
-        }
+        if (safePage !== params.page) update({ page: safePage });
       } catch (err) {
         if (isCancel(err)) return;
         setError(err.message || "Failed to load products.");
@@ -106,40 +96,21 @@ function ProductsPageInner() {
     }
 
     load();
-
-    return () => {
-      controller.abort();
-    };
+    return () => controller.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.page, params.limit, params.category, params.sortBy, params.order, params.q]);
 
-  function handlePageChange(nextPage) {
-    update({ page: nextPage });
-  }
-
-  function handleLimitChange(nextLimit) {
-    update({ limit: nextLimit, page: 1 });
-  }
-
-  function handleCategoryChange(nextCategory) {
-    update({ category: nextCategory, q: "", page: 1 });
-  }
-
-  function handleSortChange({ sortBy, order }) {
-    update({ sortBy, order, page: 1 });
-  }
-
-  function handleSearchChange(nextQ) {
-    update({ q: nextQ, category: "", page: 1 });
-  }
+  function handlePageChange(nextPage) { update({ page: nextPage }); }
+  function handleLimitChange(nextLimit) { update({ limit: nextLimit, page: 1 }); }
+  function handleCategoryChange(nextCategory) { update({ category: nextCategory, q: "", page: 1 }); }
+  function handleSortChange({ sortBy, order }) { update({ sortBy, order, page: 1 }); }
+  function handleSearchChange(nextQ) { update({ q: nextQ, category: "", page: 1 }); }
 
   async function handleConfirmDelete() {
     setDeleting(true);
     try {
       const isLocalOnly = overlayStore.getAdded(confirmDeleteId);
-      if (!isLocalOnly) {
-        await deleteProduct(confirmDeleteId); // real API call; not actually persisted server-side
-      }
+      if (!isLocalOnly) await deleteProduct(confirmDeleteId);
       overlayStore.deleteProduct(confirmDeleteId);
       setProducts((prev) => prev.filter((p) => p.id !== confirmDeleteId));
       setTotal((t) => Math.max(0, t - 1));
@@ -152,19 +123,18 @@ function ProductsPageInner() {
   }
 
   if (loading) return <Loader />;
-  if (error) {
-    return (
-      <ErrorState message={error} onRetry={() => update({ page: params.page })} />
-    );
-  }
+  if (error) return <ErrorState message={error} onRetry={() => update({ page: params.page })} />;
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Products</h1>
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-xs uppercase tracking-[0.2em] text-[#9C6B30]">Catalog</p>
+          <h1 className="font-display text-2xl text-[#211D17]">Products</h1>
+        </div>
         <Link
           href="/products/new"
-          className="rounded bg-black px-3 py-1.5 text-sm text-white"
+          className="rounded-lg bg-[#1C1917] px-4 py-2 text-sm font-medium text-white hover:bg-[#2A2521]"
         >
           + Add Product
         </Link>
