@@ -5,6 +5,7 @@ import { useListParams } from "@/hooks/useListParams";
 import { getProducts } from "@/services/product.service";
 import { clampPage } from "@/lib/params";
 import ProductList from "@/components/ProductList";
+import Pagination from "@/components/Pagination";
 import Loader from "@/components/Loader";
 import ErrorState from "@/components/ErrorState";
 import EmptyState from "@/components/EmptyState";
@@ -29,7 +30,6 @@ function ProductsPageInner() {
         setProducts(data.products);
         setTotal(data.total);
 
-        // If the URL asked for a page beyond the real total, snap it back.
         const safePage = clampPage(params.page, data.total, params.limit);
         if (safePage !== params.page) {
           update({ page: safePage });
@@ -42,22 +42,37 @@ function ProductsPageInner() {
     }
     load();
     return () => {
-      ignore = true; // avoid setting state after this effect is superseded
+      ignore = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.page, params.limit]);
 
+  function handlePageChange(nextPage) {
+    update({ page: nextPage });
+  }
+
+  function handleLimitChange(nextLimit) {
+    update({ limit: nextLimit, page: 1 }); // reset to page 1 on size change
+  }
+
   if (loading) return <Loader />;
   if (error) return <ErrorState message={error} onRetry={() => update({ page: params.page })} />;
-  if (products.length === 0) return <EmptyState />;
 
   return (
     <div className="space-y-4">
-      <ProductList products={products} />
-      <p className="text-sm text-gray-500">
-        Showing {(params.page - 1) * params.limit + 1}–
-        {Math.min(params.page * params.limit, total)} of {total}
-      </p>
+      {products.length === 0 ? (
+        <EmptyState />
+      ) : (
+        <ProductList products={products} />
+      )}
+
+      <Pagination
+        page={params.page}
+        limit={params.limit}
+        total={total}
+        onPageChange={handlePageChange}
+        onLimitChange={handleLimitChange}
+      />
     </div>
   );
 }
