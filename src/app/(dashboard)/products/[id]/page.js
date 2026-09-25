@@ -1,24 +1,62 @@
-import { notFound } from "next/navigation";
+"use client";
+
+import { useEffect, useState } from "react";
+import { useParams, notFound } from "next/navigation";
+import Link from "next/link";
 import { getProductById } from "@/services/product.service";
+import { overlayStore } from "@/lib/overlay";
 import ImageGallery from "@/components/ImageGallery";
 import Rating from "@/components/Rating";
 import ReviewList from "@/components/ReviewList";
-import Link from "next/link";
+import Loader from "@/components/Loader";
+import ErrorState from "@/components/ErrorState";
 
-export default async function ProductDetailsPage({ params }) {
-  const { id } = await params; // Next 15+/16 passes params as a Promise
+export default function ProductDetailsPage() {
+  const { id } = useParams();
+  const [product, setProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [notFoundFlag, setNotFoundFlag] = useState(false);
 
-  // Reject obviously invalid ids before even calling the API.
-  if (!/^\d+$/.test(id)) {
-    notFound();
-  }
+  useEffect(() => {
+    async function load() {
+      setLoading(true);
+      setError(null);
+      setNotFoundFlag(false);
 
-  let product;
-  try {
-    product = await getProductById(id);
-  } catch {
-    notFound(); // covers a valid-looking id (e.g. "9999") that the API doesn't have
-  }
+      if (!/^\d+$/.test(id)) {
+        setNotFoundFlag(true);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        // Locally-added products don't exist on the real API.
+        const local = overlayStore.getAdded(Number(id));
+        let data = local;
+        if (!data) {
+          const fetched = await getProductById(id);
+          data = overlayStore.applyToOne(fetched); // merge edits, or null if deleted
+        }
+
+        if (!data) {
+          setNotFoundFlag(true);
+        } else {
+          setProduct(data);
+        }
+      } catch {
+        setNotFoundFlag(true);
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, [id]);
+
+  if (loading) return <Loader />;
+  if (notFoundFlag) return notFound();
+  if (error) return <ErrorState message={error} onRetry={() => window.location.reload()} />;
+  if (!product) return null;
 
   return (
     <div className="space-y-6">
