@@ -1,15 +1,23 @@
 "use client";
 
 import { Suspense, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useListParams } from "@/hooks/useListParams";
 import { useCategories } from "@/hooks/useCategories";
-import { getProducts, getProductsByCategory, searchProducts } from "@/services/product.service";
+import {
+  getProducts,
+  getProductsByCategory,
+  searchProducts,
+  deleteProduct,
+} from "@/services/product.service";
 import { clampPage } from "@/lib/params";
 import { isCancel } from "@/lib/axios";
+import { overlayStore } from "@/lib/overlay";
 import ProductList from "@/components/ProductList";
 import ProductFilters from "@/components/ProductFilters";
 import SearchBox from "@/components/SearchBox";
 import Pagination from "@/components/Pagination";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import Loader from "@/components/Loader";
 import ErrorState from "@/components/ErrorState";
 import EmptyState from "@/components/EmptyState";
@@ -28,14 +36,17 @@ function sortProducts(products, sortBy, order) {
 function ProductsPageInner() {
   const { params, update } = useListParams();
   const categories = useCategories();
+
   const [products, setProducts] = useState([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const abortRef = useRef(null); // holds the controller for the in-flight request
+  const abortRef = useRef(null);
+
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
-    // Cancel whatever request is still running before starting a new one.
     if (abortRef.current) abortRef.current.abort();
     const controller = new AbortController();
     abortRef.current = controller;
@@ -48,8 +59,6 @@ function ProductsPageInner() {
         let data;
 
         if (params.q) {
-          // Search mode: category is ignored here by design (see Step 6 note) —
-          // the URL update functions below make sure both are never set at once anyway.
           data = await searchProducts({
             q: params.q,
             limit: params.limit,
@@ -73,11 +82,15 @@ function ProductsPageInner() {
           });
         }
 
-        const sorted = params.q || params.category
-          ? sortProducts(data.products, params.sortBy, params.order)
-          : data.products;
+        const sorted =
+          params.q || params.category
+            ? sortProducts(data.products, params.sortBy, params.order)
+            : data.products;
 
-        setProducts(sorted);
+        // Apply locally-added/edited/deleted products on top of the real API response.
+        const withOverlay = overlayStore.applyToList(sorted);
+
+        setProducts(withOverlay);
         setTotal(data.total);
 
         const safePage = clampPage(params.page, data.total, params.limit);
@@ -85,7 +98,7 @@ function ProductsPageInner() {
           update({ page: safePage });
         }
       } catch (err) {
-        if (isCancel(err)) return; // this request was superseded — do nothing
+        if (isCancel(err)) return;
         setError(err.message || "Failed to load products.");
       } finally {
         setLoading(false);
@@ -95,7 +108,7 @@ function ProductsPageInner() {
     load();
 
     return () => {
-      controller.abort(); // cancel if params change again before this finishes, or on unmount
+      controller.abort();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.page, params.limit, params.category, params.sortBy, params.order, params.q]);
@@ -109,7 +122,7 @@ function ProductsPageInner() {
   }
 
   function handleCategoryChange(nextCategory) {
-    update({ category: nextCategory, q: "", page: 1 }); // category wins, clears search
+    update({ category: nextCategory, q: "", page: 1 });
   }
 
   function handleSortChange({ sortBy, order }) {
@@ -117,14 +130,46 @@ function ProductsPageInner() {
   }
 
   function handleSearchChange(nextQ) {
-    update({ q: nextQ, category: "", page: 1 }); // search wins, clears category
+    update({ q: nextQ, category: "", page: 1 });
+  }
+
+  async function handleConfirmDelete() {
+    setDeleting(true);
+    try {
+      const isLocalOnly = overlayStore.getAdded(confirmDeleteId);
+      if (!isLocalOnly) {
+        await deleteProduct(confirmDeleteId); // real API call; not actually persisted server-side
+      }
+      overlayStore.deleteProduct(confirmDeleteId);
+      setProducts((prev) => prev.filter((p) => p.id !== confirmDeleteId));
+      setTotal((t) => Math.max(0, t - 1));
+    } catch (err) {
+      setError(err.message || "Failed to delete product.");
+    } finally {
+      setDeleting(false);
+      setConfirmDeleteId(null);
+    }
   }
 
   if (loading) return <Loader />;
-  if (error) return <ErrorState message={error} onRetry={() => update({ page: params.page })} />;
+  if (error) {
+    return (
+      <ErrorState message={error} onRetry={() => update({ page: params.page })} />
+    );
+  }
 
   return (
     <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-semibold">Products</h1>
+        <Link
+          href="/products/new"
+          className="rounded bg-black px-3 py-1.5 text-sm text-white"
+        >
+          + Add Product
+        </Link>
+      </div>
+
       <div className="flex flex-wrap items-center justify-between gap-3">
         <SearchBox initialValue={params.q} onDebouncedChange={handleSearchChange} />
         <ProductFilters
@@ -137,7 +182,11 @@ function ProductsPageInner() {
         />
       </div>
 
-      {products.length === 0 ? <EmptyState /> : <ProductList products={products} />}
+      {products.length === 0 ? (
+        <EmptyState />
+      ) : (
+        <ProductList products={products} onDelete={(id) => setConfirmDeleteId(id)} />
+      )}
 
       <Pagination
         page={params.page}
@@ -145,6 +194,15 @@ function ProductsPageInner() {
         total={total}
         onPageChange={handlePageChange}
         onLimitChange={handleLimitChange}
+      />
+
+      <ConfirmDialog
+        open={confirmDeleteId !== null}
+        title="Delete product?"
+        message="This will remove the product from your list. This cannot be undone."
+        confirming={deleting}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setConfirmDeleteId(null)}
       />
     </div>
   );
