@@ -3,7 +3,7 @@ const KEY = "accessToken";
 export const tokenStore = {
     get(){
        if (typeof document === "undefined") return null;
-       const found = document.cookie.split("; ").find((c)=>startsWith(`${KEY}=`));
+       const found = document.cookie.split("; ").find((c)=>c.startsWith(`${KEY}=`));
        return found ? decodeURIComponent(found.slice(KEY.length + 1)) : null;
     }, 
     set(token){

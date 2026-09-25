@@ -1,12 +1,14 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useListParams } from "@/hooks/useListParams";
 import { useCategories } from "@/hooks/useCategories";
-import { getProducts, getProductsByCategory } from "@/services/product.service";
+import { getProducts, getProductsByCategory, searchProducts } from "@/services/product.service";
 import { clampPage } from "@/lib/params";
+import { isCancel } from "@/lib/axios";
 import ProductList from "@/components/ProductList";
 import ProductFilters from "@/components/ProductFilters";
+import SearchBox from "@/components/SearchBox";
 import Pagination from "@/components/Pagination";
 import Loader from "@/components/Loader";
 import ErrorState from "@/components/ErrorState";
@@ -30,9 +32,14 @@ function ProductsPageInner() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const abortRef = useRef(null); // holds the controller for the in-flight request
 
   useEffect(() => {
-    let ignore = false;
+    // Cancel whatever request is still running before starting a new one.
+    if (abortRef.current) abortRef.current.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     async function load() {
       setLoading(true);
       setError(null);
@@ -40,13 +47,21 @@ function ProductsPageInner() {
         const skip = (params.page - 1) * params.limit;
         let data;
 
-        if (params.category) {
-          // Category endpoint doesn't accept sortBy/order query params reliably,
-          // so we sort the returned page on the client instead.
+        if (params.q) {
+          // Search mode: category is ignored here by design (see Step 6 note) —
+          // the URL update functions below make sure both are never set at once anyway.
+          data = await searchProducts({
+            q: params.q,
+            limit: params.limit,
+            skip,
+            signal: controller.signal,
+          });
+        } else if (params.category) {
           data = await getProductsByCategory({
             category: params.category,
             limit: params.limit,
             skip,
+            signal: controller.signal,
           });
         } else {
           data = await getProducts({
@@ -54,12 +69,11 @@ function ProductsPageInner() {
             skip,
             sortBy: params.sortBy || undefined,
             order: params.sortBy ? params.order : undefined,
+            signal: controller.signal,
           });
         }
 
-        if (ignore) return;
-
-        const sorted = params.category
+        const sorted = params.q || params.category
           ? sortProducts(data.products, params.sortBy, params.order)
           : data.products;
 
@@ -71,17 +85,20 @@ function ProductsPageInner() {
           update({ page: safePage });
         }
       } catch (err) {
-        if (!ignore) setError(err.message || "Failed to load products.");
+        if (isCancel(err)) return; // this request was superseded — do nothing
+        setError(err.message || "Failed to load products.");
       } finally {
-        if (!ignore) setLoading(false);
+        setLoading(false);
       }
     }
+
     load();
+
     return () => {
-      ignore = true;
+      controller.abort(); // cancel if params change again before this finishes, or on unmount
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params.page, params.limit, params.category, params.sortBy, params.order]);
+  }, [params.page, params.limit, params.category, params.sortBy, params.order, params.q]);
 
   function handlePageChange(nextPage) {
     update({ page: nextPage });
@@ -92,13 +109,15 @@ function ProductsPageInner() {
   }
 
   function handleCategoryChange(nextCategory) {
-    // Picking a category clears any active search (mutually exclusive),
-    // and always resets to page 1 since the result set changes.
-    update({ category: nextCategory, q: "", page: 1 });
+    update({ category: nextCategory, q: "", page: 1 }); // category wins, clears search
   }
 
   function handleSortChange({ sortBy, order }) {
     update({ sortBy, order, page: 1 });
+  }
+
+  function handleSearchChange(nextQ) {
+    update({ q: nextQ, category: "", page: 1 }); // search wins, clears category
   }
 
   if (loading) return <Loader />;
@@ -106,14 +125,17 @@ function ProductsPageInner() {
 
   return (
     <div className="space-y-4">
-      <ProductFilters
-        category={params.category}
-        categories={categories}
-        sortBy={params.sortBy}
-        order={params.order}
-        onCategoryChange={handleCategoryChange}
-        onSortChange={handleSortChange}
-      />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <SearchBox initialValue={params.q} onDebouncedChange={handleSearchChange} />
+        <ProductFilters
+          category={params.category}
+          categories={categories}
+          sortBy={params.sortBy}
+          order={params.order}
+          onCategoryChange={handleCategoryChange}
+          onSortChange={handleSortChange}
+        />
+      </div>
 
       {products.length === 0 ? <EmptyState /> : <ProductList products={products} />}
 
